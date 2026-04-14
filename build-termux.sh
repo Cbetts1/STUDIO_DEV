@@ -44,10 +44,12 @@ if [ ! -d "$SDK_DIR/cmdline-tools/latest/bin" ]; then
     mkdir -p "$SDK_DIR"
     SDK_URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
     echo "  Downloading SDK tools…"
-    curl -L "$SDK_URL" -o /tmp/sdk-tools.zip
-    unzip -q /tmp/sdk-tools.zip -d "$SDK_DIR/cmdline-tools"
+    TMPDIR="${TMPDIR:-$HOME/tmp}"
+    mkdir -p "$TMPDIR"
+    curl -L "$SDK_URL" -o "$TMPDIR/sdk-tools.zip"
+    unzip -q "$TMPDIR/sdk-tools.zip" -d "$SDK_DIR/cmdline-tools"
     mv "$SDK_DIR/cmdline-tools/cmdline-tools" "$SDK_DIR/cmdline-tools/latest" 2>/dev/null || true
-    rm /tmp/sdk-tools.zip
+    rm "$TMPDIR/sdk-tools.zip"
 fi
 
 export ANDROID_SDK_ROOT="$SDK_DIR"
@@ -83,9 +85,9 @@ if [ ! -f "gradlew" ]; then
     mkdir -p "$GRADLE_DIR"
     if [ ! -f "$GRADLE_DIR/gradle-${GRADLE_VER}/bin/gradle" ]; then
         echo "  Downloading Gradle $GRADLE_VER…"
-        curl -L "$GRADLE_URL" -o /tmp/gradle.zip
-        unzip -q /tmp/gradle.zip -d "$GRADLE_DIR"
-        rm /tmp/gradle.zip
+        curl -L "$GRADLE_URL" -o "$TMPDIR/gradle.zip"
+        unzip -q "$TMPDIR/gradle.zip" -d "$GRADLE_DIR"
+        rm "$TMPDIR/gradle.zip"
     fi
     GRADLE="$GRADLE_DIR/gradle-${GRADLE_VER}/bin/gradle"
 else
