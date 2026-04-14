@@ -99,6 +99,57 @@ export NDK_HOME="$SDK_DIR/ndk/26.3.11579264"
 export ANDROID_NDK_HOME="$NDK_HOME"
 export ANDROID_NDK_ROOT="$NDK_HOME"
 
+# ── 3.5. ARM64 AAPT2 override ─────────────────────────────
+# The AAPT2 bundled with AGP is an x86_64 binary and will not run on
+# ARM64 Termux. Detect the architecture and substitute a native binary.
+AAPT2_FLAG=""
+if [ "$(uname -m)" = "aarch64" ]; then
+    echo ""
+    echo "[3.5/6] ARM64 detected — locating native aapt2 binary…"
+
+    # 1) Try a aapt2 already installed via Termux packages (pkg install aapt2)
+    AAPT2_SYSTEM="$(command -v aapt2 2>/dev/null)"
+    if [ -n "$AAPT2_SYSTEM" ]; then
+        echo "[✓] Using system aapt2: $AAPT2_SYSTEM"
+        AAPT2_FLAG="-Pandroid.aapt2FromMavenOverride=$AAPT2_SYSTEM"
+    else
+        # 2) Download from lzhiyong/android-sdk-tools ARM64 release
+        AAPT2_DIR="$HOME/aapt2-aarch64"
+        AAPT2_BIN="$AAPT2_DIR/aapt2"
+        if [ ! -f "$AAPT2_BIN" ]; then
+            mkdir -p "$AAPT2_DIR"
+            AAPT2_URL="https://github.com/lzhiyong/android-sdk-tools/releases/download/34.0.0/android-sdk-tools-aarch64.zip"
+            echo "  Downloading ARM64 aapt2 from lzhiyong/android-sdk-tools…"
+            TMPDIR="${TMPDIR:-$HOME/tmp}"
+            mkdir -p "$TMPDIR"
+            if curl -fL "$AAPT2_URL" -o "$TMPDIR/aapt2-aarch64.zip"; then
+                if ! unzip -j -q "$TMPDIR/aapt2-aarch64.zip" "*/aapt2" -d "$AAPT2_DIR"; then
+                    echo "[!] Failed to extract aapt2 — archive may be corrupt or the path inside zip changed."
+                fi
+                chmod +x "$AAPT2_BIN" 2>/dev/null || true
+                rm -f "$TMPDIR/aapt2-aarch64.zip"
+            else
+                echo "[!] Download failed. Trying: pkg install aapt2"
+                if ! pkg install -y aapt2; then
+                    echo "[!] pkg install aapt2 also failed — aapt2 may not be in your Termux repo."
+                fi
+                AAPT2_SYSTEM="$(command -v aapt2 2>/dev/null)"
+                if [ -n "$AAPT2_SYSTEM" ]; then
+                    AAPT2_BIN="$AAPT2_SYSTEM"
+                fi
+            fi
+        fi
+        if [ -f "$AAPT2_BIN" ]; then
+            echo "[✓] ARM64 aapt2 ready: $AAPT2_BIN"
+            AAPT2_FLAG="-Pandroid.aapt2FromMavenOverride=$AAPT2_BIN"
+        else
+            echo "[!] WARNING: Could not obtain ARM64 aapt2."
+            echo "    Run:  pkg install aapt2"
+            echo "    then re-run this script. Build will likely fail without it."
+        fi
+    fi
+fi
+
 # ── 4. Setup Gradle wrapper ────────────────────────────────
 echo ""
 echo "[4/6] Setting up Gradle…"
@@ -141,7 +192,7 @@ if [ "$BUILD_TYPE" = "release" ]; then
             -dname "CN=Studio OS, OU=Studio, O=StudioOS, L=Unknown, S=Unknown, C=US" 2>/dev/null
     fi
 
-    $GRADLE assembleRelease \
+    $GRADLE assembleRelease $AAPT2_FLAG \
         -Pandroid.injected.signing.store.file="$KEYSTORE" \
         -Pandroid.injected.signing.store.password=studiokey \
         -Pandroid.injected.signing.key.alias=studio \
@@ -149,7 +200,7 @@ if [ "$BUILD_TYPE" = "release" ]; then
 
     APK="$PROJECT_DIR/app/build/outputs/apk/release/app-release.apk"
 else
-    $GRADLE assembleDebug
+    $GRADLE assembleDebug $AAPT2_FLAG
     APK="$PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
 fi
 
@@ -168,14 +219,18 @@ if [ -f "$APK" ]; then
     echo "  Size: $SIZE"
     echo ""
     echo "  To install on your device:"
-    echo "  1) Copy APK to your phone (if built on PC)"
-    echo "     or just run from Termux:"
+    echo "  1) Install directly from Termux (no ADB needed):"
+    echo ""
+    echo "     termux-open \"$APK\""
+    echo "     — or —"
+    echo "     pm install -r \"$APK\""
+    echo ""
+    echo "  2) If ADB is available (USB/wireless debug from another machine):"
     echo ""
     echo "     adb install -r \"$APK\""
     echo ""
-    echo "  2) Or open the APK file directly in Android"
-    echo "     Files app to install (enable Unknown Sources"
-    echo "     in Settings → Security first)"
+    echo "  3) Open the APK file in the Files / Downloads app"
+    echo "     (enable Unknown Sources in Settings → Security first)"
     echo ""
     cp "$APK" "$PROJECT_DIR/StudioOS-${BUILD_TYPE}.apk" 2>/dev/null || true
     echo "  Also copied to: $PROJECT_DIR/StudioOS-${BUILD_TYPE}.apk"
