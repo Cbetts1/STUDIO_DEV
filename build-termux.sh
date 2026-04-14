@@ -35,6 +35,22 @@ check_cmd git    git
 check_cmd curl   curl
 check_cmd unzip  unzip
 
+# ── Set JAVA_HOME if not already set ──────────────────────
+if [ -z "$JAVA_HOME" ]; then
+    JAVA_BIN="$(command -v java)"
+    if [ -n "$JAVA_BIN" ]; then
+        # Resolve symlinks to get the real path, then go up two levels (bin/java → jre/.. → java_home)
+        JAVA_REAL="$(readlink -f "$JAVA_BIN" 2>/dev/null || realpath "$JAVA_BIN" 2>/dev/null || echo "$JAVA_BIN")"
+        JAVA_HOME="$(dirname "$(dirname "$JAVA_REAL")")"
+        export JAVA_HOME
+        echo "[✓] JAVA_HOME set to $JAVA_HOME"
+    else
+        echo "[!] WARNING: Could not determine JAVA_HOME"
+    fi
+else
+    echo "[✓] JAVA_HOME already set to $JAVA_HOME"
+fi
+
 # ── 2. Download Android SDK Command-line Tools ────────────
 echo ""
 echo "[2/6] Setting up Android SDK…"
