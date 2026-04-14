@@ -75,7 +75,16 @@ export PATH="$SDK_DIR/cmdline-tools/latest/bin:$SDK_DIR/platform-tools:$PATH"
 echo ""
 echo "[3/6] Installing SDK components (may take a few minutes)…"
 
-yes | sdkmanager --licenses >/dev/null 2>&1 || true
+# Accept all SDK licenses (two methods for reliability in Termux)
+mkdir -p "$SDK_DIR/licenses"
+echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$SDK_DIR/licenses/android-sdk-license"
+echo "84831b9409646a918e30573bab4c9c91346d8abd" >> "$SDK_DIR/licenses/android-sdk-license"
+echo "d975f751698a77b662f1254ddbeed3901e976f5a" > "$SDK_DIR/licenses/android-sdk-preview-license"
+echo "601085b94cd77f0b54ff86406957099ebe79c4d6" > "$SDK_DIR/licenses/android-googletv-license"
+echo "33b6a2b64607f11b759f320ef9dff4ae5c47d97a" > "$SDK_DIR/licenses/android-sdk-arm-dbt-license"
+echo "859f317696f67ef3d7f30a50a5560e7834b43903" > "$SDK_DIR/licenses/android-sdk-preview-license"
+yes | sdkmanager --licenses > /dev/null 2>&1 || true
+
 sdkmanager \
     "platform-tools" \
     "platforms;android-34" \
@@ -87,6 +96,8 @@ sdkmanager \
 
 export ANDROID_HOME="$SDK_DIR"
 export NDK_HOME="$SDK_DIR/ndk/26.3.11579264"
+export ANDROID_NDK_HOME="$NDK_HOME"
+export ANDROID_NDK_ROOT="$NDK_HOME"
 
 # ── 4. Setup Gradle wrapper ────────────────────────────────
 echo ""
