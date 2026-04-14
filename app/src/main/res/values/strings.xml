@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Studio OS</string>
+    <string name="widget_description">Studio OS quick launcher widget</string>
+    <string name="engine_running">Engine running</string>
+    <string name="engine_stopped">Engine stopped</string>
+</resources>

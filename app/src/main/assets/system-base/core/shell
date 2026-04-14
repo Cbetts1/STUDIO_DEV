@@ -1,0 +1,57 @@
+#!/system/bin/sh
+# Studio OS — main shell loop
+
+STATE_FILE="$STATE_DIR/current_state"
+get_state() { cat "$STATE_FILE" 2>/dev/null || echo "home"; }
+set_state() { echo "$1" > "$STATE_FILE"; }
+
+dispatch() {
+    local input="$1"
+    local state; state=$(get_state)
+
+    # Global commands available in any state
+    case "$input" in
+        "?"|help)   show_help;      return ;;
+        0|back)     set_state home; "$SYSTEM_ROOT/core/menus/home.sh"; return ;;
+        q|quit|exit) echo "Goodbye from Studio OS."; exit 0 ;;
+        term|terminal) "$SYSTEM_ROOT/core/menus/terminal.sh"; return ;;
+    esac
+
+    case "$state" in
+        home)      "$SYSTEM_ROOT/core/menus/home.sh"      "$input" ;;
+        create)    "$SYSTEM_ROOT/core/menus/create.sh"    "$input" ;;
+        projects)  "$SYSTEM_ROOT/core/menus/projects.sh"  "$input" ;;
+        fix)       "$SYSTEM_ROOT/core/menus/fix.sh"       "$input" ;;
+        continue)  "$SYSTEM_ROOT/core/menus/continue.sh"  "$input" ;;
+        update)    "$SYSTEM_ROOT/core/menus/update.sh"    "$input" ;;
+        tools)     "$SYSTEM_ROOT/core/menus/tools.sh"     "$input" ;;
+        settings)  "$SYSTEM_ROOT/core/menus/settings.sh"  "$input" ;;
+        tutorials) "$SYSTEM_ROOT/core/menus/tutorials.sh" "$input" ;;
+        terminal)  "$SYSTEM_ROOT/core/menus/terminal.sh"  "$input" ;;
+        *)         set_state home; "$SYSTEM_ROOT/core/menus/home.sh" ;;
+    esac
+}
+
+show_help() {
+    echo "─────────────────────────────────────"
+    echo "  Studio OS — Help"
+    echo "─────────────────────────────────────"
+    echo "  Type a number to choose an option."
+    echo "  0  or 'back'  → return to Home"
+    echo "  ?  or 'help'  → show this help"
+    echo "  q  or 'quit'  → exit Studio OS"
+    echo "  'terminal'    → open mini terminal"
+    echo "─────────────────────────────────────"
+}
+
+# On first launch, show home menu
+"$SYSTEM_ROOT/core/menus/home.sh"
+
+# Main read loop
+while true; do
+    printf "\n> "
+    if ! read -r INPUT; then
+        break
+    fi
+    dispatch "$INPUT"
+done
