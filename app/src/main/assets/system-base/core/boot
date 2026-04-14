@@ -1,0 +1,34 @@
+#!/system/bin/sh
+# Studio OS — boot
+# Entry point called by EngineBridge; sets up environment and launches shell loop.
+
+export SYSTEM_ROOT="${SYSTEM_ROOT:-$(dirname "$0")/..}"
+export STATE_DIR="${STATE_DIR:-$SYSTEM_ROOT/state}"
+export HOME="${HOME:-$SYSTEM_ROOT/home}"
+export PROJECTS_DIR="${PROJECTS_DIR:-$SYSTEM_ROOT/../projects}"
+export PATH="$SYSTEM_ROOT/bin:$SYSTEM_ROOT/usr/bin:$PATH"
+
+# Create state dir if missing
+mkdir -p "$STATE_DIR" "$HOME" "$PROJECTS_DIR"
+
+# Initialize state if first boot
+if [ ! -f "$STATE_DIR/current_state" ]; then
+    echo "home" > "$STATE_DIR/current_state"
+fi
+if [ ! -f "$STATE_DIR/last_build" ]; then
+    echo "" > "$STATE_DIR/last_build"
+fi
+
+# ─── Banner ────────────────────────────────────────────────────────────────
+cat <<'BANNER'
+╔══════════════════════════════════════════════╗
+║           ◈  STUDIO  OS  v1.0  ◈             ║
+║   Your creative computer — in your pocket    ║
+╚══════════════════════════════════════════════╝
+BANNER
+echo ""
+echo "[✓] Engine started. Type ? for help at any time."
+echo ""
+
+# Launch the interactive shell loop
+exec "$SYSTEM_ROOT/core/shell"
