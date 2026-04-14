@@ -123,12 +123,16 @@ if [ "$(uname -m)" = "aarch64" ]; then
             TMPDIR="${TMPDIR:-$HOME/tmp}"
             mkdir -p "$TMPDIR"
             if curl -fL "$AAPT2_URL" -o "$TMPDIR/aapt2-aarch64.zip"; then
-                unzip -j -q "$TMPDIR/aapt2-aarch64.zip" "*/aapt2" -d "$AAPT2_DIR" || true
+                if ! unzip -j -q "$TMPDIR/aapt2-aarch64.zip" "*/aapt2" -d "$AAPT2_DIR"; then
+                    echo "[!] Failed to extract aapt2 — archive may be corrupt or the path inside zip changed."
+                fi
                 chmod +x "$AAPT2_BIN" 2>/dev/null || true
                 rm -f "$TMPDIR/aapt2-aarch64.zip"
             else
                 echo "[!] Download failed. Trying: pkg install aapt2"
-                pkg install -y aapt2 2>/dev/null || true
+                if ! pkg install -y aapt2; then
+                    echo "[!] pkg install aapt2 also failed — aapt2 may not be in your Termux repo."
+                fi
                 AAPT2_SYSTEM="$(command -v aapt2 2>/dev/null)"
                 if [ -n "$AAPT2_SYSTEM" ]; then
                     AAPT2_BIN="$AAPT2_SYSTEM"
