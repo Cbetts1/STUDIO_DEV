@@ -73,12 +73,13 @@ cd STUDIO_DEV
 # 2. Run the build script (downloads SDK + NDK automatically)
 bash build-termux.sh debug
 
-# 3. Install the APK
-# Option A — via ADB (if connected to PC):
-adb install -r StudioOS-debug.apk
+# 3. Install the APK — run this in Termux:
+termux-open StudioOS-debug.apk
+# Tap "Install" in the popup.
+# (Settings → Security → allow Unknown Sources for Termux first if prompted)
 
-# Option B — open APK directly in Android Files app
-# (Settings → Security → allow Unknown Sources first)
+# Option B — open APK in the Android Files app instead
+# Option C — if on a PC with ADB: adb install -r StudioOS-debug.apk
 ```
 
 ---
