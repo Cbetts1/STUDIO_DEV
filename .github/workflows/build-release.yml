@@ -1,0 +1,77 @@
+name: Build & Release APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK & cmake
+        run: |
+          sdkmanager "ndk;27.3.13750724" "cmake;3.31.5"
+
+      - name: Grant gradlew execute permission
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Rename APK
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk StudioOS-debug.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: StudioOS-debug
+          path: StudioOS-debug.apk
+
+      - name: Get version info
+        id: version
+        run: |
+          VERSION=$(grep versionName app/build.gradle | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          BUILD=$(git rev-parse --short HEAD)
+          echo "tag=v${VERSION}-${BUILD}" >> $GITHUB_OUTPUT
+          echo "name=Studio OS v${VERSION} (${BUILD})" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.name }}
+          body: |
+            ## Studio OS Debug APK
+
+            **Build:** `${{ github.sha }}`
+            **Branch:** `${{ github.ref_name }}`
+
+            ### Install
+            1. Download `StudioOS-debug.apk` below
+            2. Enable *Unknown Sources* on your device (Settings → Security)
+            3. Open the APK to install
+
+            > ⚠️ This is a **debug** build intended for testing.
+          files: StudioOS-debug.apk
+          draft: false
+          prerelease: true
